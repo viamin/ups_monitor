@@ -7,10 +7,10 @@ RSpec.describe UPSMonitor do
   let(:config_file) do
     Tempfile.new(["config", ".json"]).tap do |f|
       f.write(JSON.generate({
-        qnap: {
+        nas: {
           host: "192.168.1.100",
           username: "admin",
-          ssh_key_path: "~/.ssh/qnap_key",
+          ssh_key_path: "~/.ssh/nas_key",
           mac_address: "00:11:22:33:44:55"
         },
         ups: {
@@ -27,19 +27,20 @@ RSpec.describe UPSMonitor do
   after do
     config_file.close
     config_file.unlink
+    File.unlink('last_state.txt') if File.exist?('last_state.txt')
   end
 
   describe "#load_config" do
     it "loads and parses the config file correctly" do
       config = monitor.load_config(config_file.path)
-      expect(config[:qnap][:host]).to eq("192.168.1.100")
+      expect(config[:nas][:host]).to eq("192.168.1.100")
       expect(config[:ups][:name]).to eq("AVR750U")
       expect(config[:ups][:low_battery_threshold]).to eq(20)
     end
 
     it "expands the SSH key path" do
       config = monitor.load_config(config_file.path)
-      expect(config[:qnap][:ssh_key_path]).to eq(File.expand_path("~/.ssh/qnap_key"))
+      expect(config[:nas][:ssh_key_path]).to eq(File.expand_path("~/.ssh/nas_key"))
     end
   end
 
@@ -97,6 +98,9 @@ RSpec.describe UPSMonitor do
 
     context "when on AC power with good battery" do
       before do
+        # Set up the initial state as AC power
+        File.write('last_state.txt', 'ac')
+
         allow(monitor).to receive(:get_battery_info).and_return({
           battery_level: 100,
           ac_attached: true,
@@ -105,8 +109,8 @@ RSpec.describe UPSMonitor do
       end
 
       it "does not trigger any actions" do
-        expect(monitor).not_to receive(:shutdown_qnap)
-        expect(monitor).not_to receive(:wake_qnap)
+        expect(monitor).not_to receive(:shutdown_nas)
+        expect(monitor).not_to receive(:wake_nas)
         expect { monitor.check_power_status }.to raise_error(SystemExit) do |error|
           expect(error.status).to eq(0)
         end
@@ -115,6 +119,9 @@ RSpec.describe UPSMonitor do
 
     context "when on battery power below threshold" do
       before do
+        # Set up the initial state as AC power
+        File.write('last_state.txt', 'ac')
+
         allow(monitor).to receive(:get_battery_info).and_return({
           battery_level: 15,
           ac_attached: false,
@@ -122,8 +129,8 @@ RSpec.describe UPSMonitor do
         })
       end
 
-      it "triggers QNAP shutdown" do
-        expect(monitor).to receive(:shutdown_qnap)
+      it "triggers NAS shutdown" do
+        expect(monitor).to receive(:shutdown_nas)
         expect { monitor.check_power_status }.to raise_error(SystemExit) do |error|
           expect(error.status).to eq(0)
         end
@@ -150,7 +157,7 @@ RSpec.describe UPSMonitor do
     end
   end
 
-  describe "#shutdown_qnap" do
+  describe "#shutdown_nas" do
     let(:ssh) { double("SSH") }
 
     it "executes shutdown command over SSH" do
@@ -158,13 +165,13 @@ RSpec.describe UPSMonitor do
         "192.168.1.100",
         "admin",
         hash_including(
-          keys: [File.expand_path("~/.ssh/qnap_key")],
+          keys: [File.expand_path("~/.ssh/nas_key")],
           non_interactive: true
         )
       ).and_yield(ssh)
 
       expect(ssh).to receive(:exec!).with("shutdown -h now")
-      monitor.shutdown_qnap
+      monitor.shutdown_nas
     end
   end
 end

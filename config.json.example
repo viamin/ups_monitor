@@ -1,8 +1,8 @@
 {
-  "qnap": {
+  "nas": {
     "host": "192.168.1.100",
     "username": "admin",
-    "ssh_key_path": "~/.ssh/qnap_key",
+    "ssh_key_path": "~/.ssh/nas_key",
     "mac_address": "00:11:22:33:44:55"
   },
   "ups": {

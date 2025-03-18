@@ -15,11 +15,11 @@ class UPSMonitor
   def load_config(config_path)
     config = JSON.parse(File.read(config_path))
     {
-      qnap: {
-        host: config["qnap"]["host"],
-        username: config["qnap"]["username"],
-        ssh_key_path: File.expand_path(config["qnap"]["ssh_key_path"]),
-        mac_address: config["qnap"]["mac_address"]
+      nas: {
+        host: config["nas"]["host"],
+        username: config["nas"]["username"],
+        ssh_key_path: File.expand_path(config["nas"]["ssh_key_path"]),
+        mac_address: config["nas"]["mac_address"]
       },
       ups: {
         name: config["ups"]["name"],
@@ -74,7 +74,7 @@ class UPSMonitor
     end
 
     if current_state == :battery && battery_info[:battery_level] <= @config[:ups][:low_battery_threshold]
-      shutdown_qnap
+      shutdown_nas
       exit(0)
     end
 
@@ -90,31 +90,31 @@ class UPSMonitor
     @logger.info("Power state changed from #{@last_power_state} to #{new_state}")
 
     if new_state == :ac && @last_power_state == :battery
-      wake_qnap
+      wake_nas
     end
   end
 
-  def shutdown_qnap
-    @logger.info("Initiating QNAP shutdown")
+  def shutdown_nas
+    @logger.info("Initiating NAS shutdown")
     begin
       Net::SSH.start(
-        @config[:qnap][:host],
-        @config[:qnap][:username],
-        keys: [@config[:qnap][:ssh_key_path]],
+        @config[:nas][:host],
+        @config[:nas][:username],
+        keys: [@config[:nas][:ssh_key_path]],
         non_interactive: true
       ) do |ssh|
         ssh.exec!("shutdown -h now")
       end
-      @logger.info("QNAP shutdown command sent successfully")
+      @logger.info("NAS shutdown command sent successfully")
     rescue => e
-      @logger.error("Failed to shutdown QNAP: #{e.message}")
+      @logger.error("Failed to shutdown NAS: #{e.message}")
     end
   end
 
-  def wake_qnap
-    @logger.info("Attempting to wake QNAP")
+  def wake_nas
+    @logger.info("Attempting to wake NAS")
     begin
-      send_wol_packet(@config[:qnap][:mac_address])
+      send_wol_packet(@config[:nas][:mac_address])
       @logger.info("Wake-on-LAN packet sent successfully")
     rescue => e
       @logger.error("Failed to send Wake-on-LAN packet: #{e.message}")
