@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.ups.monitor</string>
+    <key>ProgramArguments</key>
+    <array>
+        <string>/usr/bin/ruby</string>
+        <string>/Users/bart/Projects/ups_monitor/ups_monitor.rb</string>
+    </array>
+    <key>StartInterval</key>
+    <integer>60</integer>
+    <key>StandardErrorPath</key>
+    <string>/Users/bart/Projects/ups_monitor/ups_monitor.err.log</string>
+    <key>StandardOutPath</key>
+    <string>/Users/bart/Projects/ups_monitor/ups_monitor.out.log</string>
+    <key>WorkingDirectory</key>
+    <string>/Users/bart/Projects/ups_monitor</string>
+</dict>
+</plist>

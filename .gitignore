@@ -1,0 +1,4 @@
+config.json
+examples.txt
+last_state.txt
+*.log
